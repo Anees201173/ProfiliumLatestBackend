@@ -1,4 +1,8 @@
 const { Sequelize } = require("sequelize");
+// Explicitly require pg so bundlers (like Vercel) include it in the deployment bundle
+// This avoids "Please install pg package manually" when Sequelize dynamically loads the dialect.
+// eslint-disable-next-line no-unused-vars
+const pg = require("pg");
 const config = require("../config/database");
 
 const env = process.env.NODE_ENV || "development";
