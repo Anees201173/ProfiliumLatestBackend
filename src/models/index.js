@@ -25,7 +25,11 @@ if (dbConfig && dbConfig.use_env_variable) {
     );
   }
   try {
-    sequelize = new Sequelize(connectionString, dbConfig);
+    // Pass pg explicitly as dialectModule so Sequelize doesn't need to require('pg') internally.
+    sequelize = new Sequelize(connectionString, {
+      ...dbConfig,
+      dialectModule: pg,
+    });
   } catch (err) {
     const masked =
       connectionString.length > 20
@@ -44,7 +48,7 @@ if (dbConfig && dbConfig.use_env_variable) {
     dbConfig.database,
     dbConfig.username,
     dbConfig.password,
-    dbConfig
+    { ...dbConfig, dialectModule: pg }
   );
 } else {
   throw new Error(`No database configuration found for environment: ${env}`);
@@ -83,15 +87,21 @@ db.User.hasOne(db.Company, { foreignKey: "userId", as: "companyProfile" });
 db.Company.belongsTo(db.User, { foreignKey: "userId", as: "user" });
 
 // Company -> Jobs
-db.Company.hasMany(db.Job, { foreignKey: 'companyId', as: 'jobs' });
-db.Job.belongsTo(db.Company, { foreignKey: 'companyId', as: 'company' });
+db.Company.hasMany(db.Job, { foreignKey: "companyId", as: "jobs" });
+db.Job.belongsTo(db.Company, { foreignKey: "companyId", as: "company" });
 
 // Job applications associations
-db.Job.hasMany(db.JobApplication, { foreignKey: 'jobId', as: 'applications' });
-db.JobApplication.belongsTo(db.Job, { foreignKey: 'jobId', as: 'job' });
+db.Job.hasMany(db.JobApplication, { foreignKey: "jobId", as: "applications" });
+db.JobApplication.belongsTo(db.Job, { foreignKey: "jobId", as: "job" });
 
-db.Candidate.hasMany(db.JobApplication, { foreignKey: 'candidateId', as: 'applications' });
-db.JobApplication.belongsTo(db.Candidate, { foreignKey: 'candidateId', as: 'candidate' });
+db.Candidate.hasMany(db.JobApplication, {
+  foreignKey: "candidateId",
+  as: "applications",
+});
+db.JobApplication.belongsTo(db.Candidate, {
+  foreignKey: "candidateId",
+  as: "candidate",
+});
 
 // Psychometric tests models
 db.Test = require("./Test")(sequelize);
@@ -153,43 +163,84 @@ db.CandidateAnswer.belongsTo(db.Option, {
 // Candidate <-> Skill (many-to-many through CandidateSkill)
 db.Candidate.belongsToMany(db.Skill, {
   through: db.CandidateSkill,
-  as: 'skills',
-  foreignKey: 'candidateId',
-  otherKey: 'skillId',
+  as: "skills",
+  foreignKey: "candidateId",
+  otherKey: "skillId",
 });
 db.Skill.belongsToMany(db.Candidate, {
   through: db.CandidateSkill,
-  as: 'candidates',
-  foreignKey: 'skillId',
-  otherKey: 'candidateId',
+  as: "candidates",
+  foreignKey: "skillId",
+  otherKey: "candidateId",
 });
 // Expose pivot for direct access if needed
-db.Candidate.hasMany(db.CandidateSkill, { foreignKey: 'candidateId', as: 'candidateSkills' });
-db.CandidateSkill.belongsTo(db.Candidate, { foreignKey: 'candidateId', as: 'candidate' });
-db.Skill.hasMany(db.CandidateSkill, { foreignKey: 'skillId', as: 'skillLinks' });
-db.CandidateSkill.belongsTo(db.Skill, { foreignKey: 'skillId', as: 'skill' });
+db.Candidate.hasMany(db.CandidateSkill, {
+  foreignKey: "candidateId",
+  as: "candidateSkills",
+});
+db.CandidateSkill.belongsTo(db.Candidate, {
+  foreignKey: "candidateId",
+  as: "candidate",
+});
+db.Skill.hasMany(db.CandidateSkill, {
+  foreignKey: "skillId",
+  as: "skillLinks",
+});
+db.CandidateSkill.belongsTo(db.Skill, { foreignKey: "skillId", as: "skill" });
 
 // Candidate -> Experiences (one-to-many)
-db.Candidate.hasMany(db.CandidateExperience, { foreignKey: 'candidateId', as: 'experiences' });
-db.CandidateExperience.belongsTo(db.Candidate, { foreignKey: 'candidateId', as: 'candidate' });
+db.Candidate.hasMany(db.CandidateExperience, {
+  foreignKey: "candidateId",
+  as: "experiences",
+});
+db.CandidateExperience.belongsTo(db.Candidate, {
+  foreignKey: "candidateId",
+  as: "candidate",
+});
 
 // Messaging associations
 // Conversation <-> Message
-db.Conversation.hasMany(db.Message, { foreignKey: 'conversationId', as: 'messages' });
-db.Message.belongsTo(db.Conversation, { foreignKey: 'conversationId', as: 'conversation' });
+db.Conversation.hasMany(db.Message, {
+  foreignKey: "conversationId",
+  as: "messages",
+});
+db.Message.belongsTo(db.Conversation, {
+  foreignKey: "conversationId",
+  as: "conversation",
+});
 // Message sender relation to User
-db.Message.belongsTo(db.User, { foreignKey: 'senderId', as: 'sender' });
+db.Message.belongsTo(db.User, { foreignKey: "senderId", as: "sender" });
 
 // Conversation <-> User through ConversationParticipant
-db.Conversation.belongsToMany(db.User, { through: db.ConversationParticipant, foreignKey: 'conversationId', otherKey: 'userId', as: 'participants' });
-db.User.belongsToMany(db.Conversation, { through: db.ConversationParticipant, foreignKey: 'userId', otherKey: 'conversationId', as: 'conversations' });
+db.Conversation.belongsToMany(db.User, {
+  through: db.ConversationParticipant,
+  foreignKey: "conversationId",
+  otherKey: "userId",
+  as: "participants",
+});
+db.User.belongsToMany(db.Conversation, {
+  through: db.ConversationParticipant,
+  foreignKey: "userId",
+  otherKey: "conversationId",
+  as: "conversations",
+});
 
-db.Conversation.hasMany(db.ConversationParticipant, { foreignKey: 'conversationId', as: 'participantLinks' });
-db.ConversationParticipant.belongsTo(db.Conversation, { foreignKey: 'conversationId', as: 'conversation' });
+db.Conversation.hasMany(db.ConversationParticipant, {
+  foreignKey: "conversationId",
+  as: "participantLinks",
+});
+db.ConversationParticipant.belongsTo(db.Conversation, {
+  foreignKey: "conversationId",
+  as: "conversation",
+});
 
-db.User.hasMany(db.ConversationParticipant, { foreignKey: 'userId', as: 'conversationLinks' });
-db.ConversationParticipant.belongsTo(db.User, { foreignKey: 'userId', as: 'user' });
-
-
+db.User.hasMany(db.ConversationParticipant, {
+  foreignKey: "userId",
+  as: "conversationLinks",
+});
+db.ConversationParticipant.belongsTo(db.User, {
+  foreignKey: "userId",
+  as: "user",
+});
 
 module.exports = db;
