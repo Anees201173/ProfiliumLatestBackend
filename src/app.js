@@ -8,10 +8,16 @@ const logger = require("./utils/logger");
 // Initialize express app
 const app = express();
 
+const allowedOrigins = [
+  "https://profilium-frontend-frug.vercel.app",
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+];
+
 // Middleware
 app.use(
   cors({
-    origin: corsOrigin,
+    origin: allowedOrigins,
     credentials: true,
   })
 );
