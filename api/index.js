@@ -1,3 +1,21 @@
+// Polyfill DOM APIs used by pdf-parse in environments without a browser / canvas
+if (typeof global.DOMMatrix === 'undefined') {
+	// minimal stub to satisfy pdf-parse checks
+	global.DOMMatrix = function DOMMatrix() {};
+}
+if (typeof global.ImageData === 'undefined') {
+	global.ImageData = class ImageData {
+		constructor(data, width, height) {
+			this.data = data;
+			this.width = width;
+			this.height = height;
+		}
+	};
+}
+if (typeof global.Path2D === 'undefined') {
+	global.Path2D = class Path2D {};
+}
+
 const serverless = require('serverless-http');
 const app = require('../src/app');
 
