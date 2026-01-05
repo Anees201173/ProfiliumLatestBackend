@@ -1,4 +1,18 @@
 require("dotenv").config();
+// Debug: verify pg is resolvable in the deployed environment before models are required
+try {
+  const pgPath = require.resolve("pg");
+  console.log("pg resolved to:", pgPath);
+  try {
+    const pgPkg = require("pg/package.json");
+    console.log("pg version:", pgPkg.version);
+  } catch (e) {
+    console.log("pg package.json not found, but pg resolved");
+  }
+} catch (err) {
+  console.error("pg cannot be resolved in runtime:", err && err.message ? err.message : err);
+}
+
 const app = require("./src/app");
 const db = require("./src/models");
 const { port } = require("./src/config/env");
