@@ -1,6 +1,30 @@
 const axios = require("axios");
-const pdfParse = require("pdf-parse");
 const mammoth = require("mammoth");
+
+// Try to require pdf-parse lazily and provide minimal polyfills for
+// DOM classes that pdf.js expects in some serverless environments
+// (Vercel's Node runtime may not provide DOMMatrix/ImageData/Path2D).
+// If pdf-parse can't be loaded (native canvas bindings missing),
+// we gracefully fall back and return an empty string for PDFs.
+let pdfParse = null;
+try {
+  if (typeof global.DOMMatrix === "undefined") {
+    // Minimal no-op polyfills to avoid ReferenceError during require.
+    // These are intentionally light-weight: we only need them so the
+    // module loads; full canvas rendering won't be available here.
+    global.DOMMatrix = global.DOMMatrix || function DOMMatrix() {};
+    global.ImageData = global.ImageData || class ImageData {};
+    global.Path2D = global.Path2D || function Path2D() {};
+  }
+  // Require after polyfills are set
+  // eslint-disable-next-line global-require
+  pdfParse = require("pdf-parse");
+} catch (err) {
+  // If pdf-parse cannot be loaded (for example @napi-rs/canvas native
+  // bindings not available on Vercel), keep pdfParse as null and
+  // allow the rest of the app to function. CV parsing will be a no-op.
+  pdfParse = null;
+}
 
 /**
  * Download a CV file (PDF or DOCX) and extract plain text.
@@ -18,6 +42,11 @@ async function extractTextFromCv(cvUrl) {
 
     // Decide parser based on content type or file extension
     if (contentType.includes("pdf") || cvUrl.toLowerCase().endsWith(".pdf")) {
+      if (!pdfParse) {
+        // Running in an environment where pdf-parse (or its native deps)
+        // can't be loaded. Skip parsing rather than crashing.
+        return "";
+      }
       const data = await pdfParse(Buffer.from(response.data));
       return (data.text || "").trim();
     }
