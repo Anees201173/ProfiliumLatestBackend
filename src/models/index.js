@@ -26,9 +26,23 @@ if (dbConfig && dbConfig.use_env_variable) {
   }
   try {
     // Pass pg explicitly as dialectModule so Sequelize doesn't need to require('pg') internally.
+    // Also set short timeouts to avoid long hangs in serverless environments when the DB is unreachable.
     sequelize = new Sequelize(connectionString, {
       ...dbConfig,
       dialectModule: pg,
+      pool: {
+        // max time (ms) to try getting connection from pool before throwing
+        acquire: 10000,
+        // default pool settings fallback
+        max: dbConfig.pool?.max || 5,
+        min: dbConfig.pool?.min || 0,
+        idle: dbConfig.pool?.idle || 10000,
+      },
+      dialectOptions: {
+        ...(dbConfig.dialectOptions || {}),
+        // pg client connection timeout in milliseconds
+        connectionTimeoutMillis: 10000,
+      },
     });
   } catch (err) {
     const masked =
@@ -48,7 +62,20 @@ if (dbConfig && dbConfig.use_env_variable) {
     dbConfig.database,
     dbConfig.username,
     dbConfig.password,
-    { ...dbConfig, dialectModule: pg }
+    {
+      ...dbConfig,
+      dialectModule: pg,
+      pool: {
+        acquire: 10000,
+        max: dbConfig.pool?.max || 5,
+        min: dbConfig.pool?.min || 0,
+        idle: dbConfig.pool?.idle || 10000,
+      },
+      dialectOptions: {
+        ...(dbConfig.dialectOptions || {}),
+        connectionTimeoutMillis: 10000,
+      },
+    }
   );
 } else {
   throw new Error(`No database configuration found for environment: ${env}`);
