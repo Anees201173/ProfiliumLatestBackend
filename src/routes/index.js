@@ -15,6 +15,8 @@ const candidateAnswerRoutes = require('./candidateAnswerRoutes');
 const jobRoutes = require('./jobRoutes');
 const skillRoutes = require('./skillRoutes');
 const messageRoutes = require('./messageRoutes');
+const pricingRoutes = require('./pricingRoutes');
+const faqRoutes = require('./faqRoutes');
 
 // Health check route
 router.get("/health", (req, res) => {
@@ -39,6 +41,8 @@ router.use('/candidate-answers', candidateAnswerRoutes);
 router.use('/jobs', jobRoutes);
 router.use('/skills', skillRoutes);
 router.use('/messages', messageRoutes);
+router.use('/pricing', pricingRoutes);
+router.use('/faq', faqRoutes);
 // File uploads (S3)
 router.use("/uploads", require("./uploadRoutes"));
 

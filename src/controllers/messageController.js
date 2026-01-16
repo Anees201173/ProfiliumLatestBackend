@@ -25,6 +25,7 @@ exports.createConversation = async (req, res, next) => {
 exports.listConversations = async (req, res, next) => {
   try {
     const userId = req.user?.id;
+    const userRole = req.user?.role;
     if (!userId) return res.status(401).json({ success: false, message: 'Authentication required' });
 
     const conversations = await db.Conversation.findAll({
@@ -67,10 +68,13 @@ exports.listConversations = async (req, res, next) => {
       where: {},
     });
 
-    // Filter conversations to those where user is participant
-    const filtered = conversations.filter(c => c.participants.some(p => p.id === userId));
+    // For non-admin users, only show conversations where they are a participant
+    let result = conversations;
+    if (userRole !== 'admin') {
+      result = conversations.filter(c => c.participants.some(p => p.id === userId));
+    }
 
-    res.json({ success: true, data: filtered });
+    res.json({ success: true, data: result });
   } catch (err) {
     next(err);
   }
@@ -81,6 +85,7 @@ exports.getConversation = async (req, res, next) => {
   try {
     const { id } = req.params;
     const userId = req.user?.id;
+    const userRole = req.user?.role;
     const conversation = await db.Conversation.findByPk(id, {
       include: [
         {
@@ -118,7 +123,8 @@ exports.getConversation = async (req, res, next) => {
     });
     if (!conversation) return res.status(404).json({ success: false, message: 'Conversation not found' });
 
-    if (!conversation.participants.some(p => p.id === userId)) {
+    // Non-admin users must be participants in the conversation
+    if (userRole !== 'admin' && !conversation.participants.some(p => p.id === userId)) {
       return res.status(403).json({ success: false, message: 'Not a participant' });
     }
 

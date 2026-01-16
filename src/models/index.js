@@ -91,6 +91,8 @@ db.sequelize = sequelize;
 db.User = require("./User")(sequelize);
 db.Candidate = require("./Candidate")(sequelize);
 db.Company = require("./Company")(sequelize);
+db.PricingPlan = require("./PricingPlan")(sequelize);
+db.Faq = require("./Faq")(sequelize);
 // Jobs (company posts)
 db.Job = require("./Job")(sequelize);
 db.JobApplication = require("./JobApplication")(sequelize);

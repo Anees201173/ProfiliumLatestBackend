@@ -163,7 +163,7 @@ exports.getMyProfile = async (req, res, next) => {
         {
           model: db.User,
           as: "user",
-          attributes: ["id", "name", "email", "role", "isActive"],
+          attributes: ["id", "name", "email", "role", "isActive", "firstName", "lastName", "gender", "dateOfBirth"],
         },
         {
           model: db.CandidateExperience,
